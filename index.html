@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Photo Fighter Demo</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Photo Fighter</h1>
+
+    <div id="setup">
+        <div>
+            <label for="p1-upload">Player 1 Character:</label>
+            <input type="file" id="p1-upload" accept="image/*">
+        </div>
+        <div>
+            <label for="p2-upload">Player 2 Character:</label>
+            <input type="file" id="p2-upload" accept="image/*">
+        </div>
+        <button id="start-button">Start Game</button>
+    </div>
+
+    <div id="game-area" style="display:none;">
+        <canvas id="game-canvas" width="800" height="400"></canvas>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
