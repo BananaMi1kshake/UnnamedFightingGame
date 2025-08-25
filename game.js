@@ -138,15 +138,21 @@ setupHeadEditor(p2_upload, p2_headEditor, p2_headFrame, p2_previewImg, p2_zoomSl
 // --- CORE GAME FUNCTIONS ---
 
 function createPlayer(x, y, headImage, name) {
+    const handsDownAngle = Math.PI / 2; // 90 degrees
     return {
         x, y, headImage, name: name || 'Player',
         width: 60, height: 150,
         vx: 0, vy: 0,
+        knockbackVx: 0,
         health: 100, isJumping: false,
         direction: 'right', canAttack: true, attackCooldown: 0,
         body: {
             torso: { width: 40, height: 60 },
-            arms: { left: { rotation: 0.1, targetRotation: 0.1 }, right: { rotation: 0.1, targetRotation: 0.1 } },
+            // CHANGED: Set the initial and target rotation for arms to be down.
+            arms: {
+                left: { rotation: -handsDownAngle, targetRotation: -handsDownAngle },
+                right: { rotation: handsDownAngle, targetRotation: handsDownAngle }
+            },
             legs: { left: { rotation: 0, targetRotation: 0 }, right: { rotation: 0, targetRotation: 0 } },
             armLength: 40, legLength: 50,
             animState: 'idle', animTimer: 0
@@ -181,15 +187,58 @@ function performAttack(attacker, attackType) {
     attacker.body.animState = attackType;
     attacker.body.animTimer = 250;
     
-    // Hitbox logic would go here
+    // --- Hitbox Logic ---
+    const opponent = (attacker === player1) ? player2 : player1;
+    const hitbox = {
+        x: 0, y: 0, width: 0, height: 0
+    };
+    const attackReach = (attackType === 'punch') ? 40 : 50;
+    
+    // Position the hitbox based on the attacker's position and direction
+    const attackerPivotX = attacker.x + attacker.width / 2;
+    if (attacker.direction === 'right') {
+        hitbox.x = attackerPivotX;
+        hitbox.width = attackReach;
+    } else {
+        hitbox.x = attackerPivotX - attackReach;
+        hitbox.width = attackReach;
+    }
+    hitbox.y = attacker.y - attacker.height + (attackType === 'punch' ? 40 : 80);
+    hitbox.height = 20;
+
+    // Define the opponent's hurtbox
+    const opponentHurtbox = {
+        x: opponent.x,
+        y: opponent.y - opponent.height,
+        width: opponent.width,
+        height: opponent.height
+    };
+
+    // Check for collision
+    if (hitbox.x < opponentHurtbox.x + opponentHurtbox.width &&
+        hitbox.x + hitbox.width > opponentHurtbox.x &&
+        hitbox.y < opponentHurtbox.y + opponentHurtbox.height &&
+        hitbox.y + hitbox.height > opponentHurtbox.y)
+    {
+        opponent.health -= (attackType === 'punch' ? 10 : 15);
+        opponent.knockbackVx = (attacker.direction === 'right' ? 8 : -8);
+    }
 }
 
 
 function updatePlayer(player) {
+    // Apply player-controlled velocity
     player.x += player.vx;
+    // Apply and decay knockback
+    player.x += player.knockbackVx;
+    player.knockbackVx *= 0.90; // Friction
+    if (Math.abs(player.knockbackVx) < 0.1) player.knockbackVx = 0;
+
+    // Apply gravity
     player.vy += gravity;
     player.y += player.vy;
 
+    // Boundary and floor checks
     if (player.x < 0) player.x = 0;
     if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
     if (player.y > canvas.height) {
@@ -198,6 +247,7 @@ function updatePlayer(player) {
         player.isJumping = false;
     }
 
+    // Cooldown and Animation Timers
     if (!player.canAttack) {
         player.attackCooldown -= 16;
         if (player.attackCooldown <= 0) player.canAttack = true;
@@ -207,21 +257,33 @@ function updatePlayer(player) {
         if (player.body.animTimer <= 0) player.body.animState = 'idle';
     }
     
+    // --- UPDATED ANIMATION LOGIC ---
+    const handsDownAngle = Math.PI / 2;
+    
+    // Set default idle rotations
+    player.body.arms.right.targetRotation = handsDownAngle;
+    player.body.arms.left.targetRotation = -handsDownAngle;
+    player.body.legs.right.targetRotation = 0;
+    player.body.legs.left.targetRotation = 0;
+
+    // Set attack rotations based on state and direction
     if (player.body.animState === 'punch') {
-        const arm = player.direction === 'right' ? player.body.arms.right : player.body.arms.left;
-        arm.targetRotation = 1.57; // 90 degrees
+        if (player.direction === 'right') {
+            player.body.arms.right.targetRotation = 0; // Punch straight
+        } else {
+            player.body.arms.left.targetRotation = 0; // Punch straight
+        }
     } else if (player.body.animState === 'kick') {
-        const leg = player.direction === 'right' ? player.body.legs.right : player.body.legs.left;
-        leg.targetRotation = 1.2;
-    } else { // Idle state
-        player.body.arms.right.targetRotation = 0.1;
-        player.body.arms.left.targetRotation = 0.1;
-        player.body.legs.right.targetRotation = 0;
-        player.body.legs.left.targetRotation = 0;
+        if (player.direction === 'right') {
+            player.body.legs.right.targetRotation = -0.5; // Kick forward
+        } else {
+            player.body.legs.left.targetRotation = 0.5; // Kick forward
+        }
     }
 
+    // Tweening for smooth animation
     for (const limb of [player.body.arms.left, player.body.arms.right, player.body.legs.left, player.body.legs.right]) {
-        limb.rotation += (limb.targetRotation - limb.rotation) * 0.2;
+        limb.rotation += (limb.targetRotation - limb.rotation) * 0.25; // Increased speed slightly
     }
 }
 
@@ -233,6 +295,9 @@ function drawPlayer(player) {
     const pivotX = x + width / 2;
     const pivotY = y; 
 
+    // Flipping the entire character for direction is now handled by individual limb rotations
+    // The main canvas flip is no longer needed here if limbs are drawn symmetrically.
+    // However, we'll keep it for the head.
     if (direction === 'left') {
         ctx.translate(pivotX, pivotY - body.legLength - body.torso.height); 
         ctx.scale(-1, 1);
@@ -263,12 +328,12 @@ function drawPlayer(player) {
     ctx.save();
     ctx.translate(pivotX - body.torso.width / 2, torsoTop + 10);
     ctx.rotate(body.arms.left.rotation);
-    ctx.fillRect(-body.armLength, -5, body.armLength, 10);
+    ctx.fillRect(0, -5, body.armLength, 10); // Draw relative to pivot
     ctx.restore();
     ctx.save();
     ctx.translate(pivotX + body.torso.width / 2, torsoTop + 10);
     ctx.rotate(body.arms.right.rotation);
-    ctx.fillRect(0, -5, body.armLength, 10);
+    ctx.fillRect(-body.armLength, -5, body.armLength, 10); // Draw relative to pivot
     ctx.restore();
 
     // Neck & Head
