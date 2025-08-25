@@ -11,11 +11,29 @@
         <div>
             <label for="p1-upload">Player 1 Character:</label>
             <input type="file" id="p1-upload" accept="image/*">
+            <div id="p1-head-editor" class="head-editor">
+                <p>Adjust Player 1's Head</p>
+                <div id="p1-head-frame" class="head-frame">
+                    <img id="p1-preview-img" class="preview-img" src="">
+                </div>
+                <input type="range" id="p1-zoom-slider" class="zoom-slider" min="50" max="400" value="100">
+                <button id="p1-confirm-head" class="confirm-button">Confirm Head</button>
+            </div>
         </div>
+        
         <div>
             <label for="p2-upload">Player 2 Character:</label>
             <input type="file" id="p2-upload" accept="image/*">
+             <div id="p2-head-editor" class="head-editor">
+                <p>Adjust Player 2's Head</p>
+                <div id="p2-head-frame" class="head-frame">
+                    <img id="p2-preview-img" class="preview-img" src="">
+                </div>
+                <input type="range" id="p2-zoom-slider" class="zoom-slider" min="50" max="400" value="100">
+                <button id="p2-confirm-head" class="confirm-button">Confirm Head</button>
+            </div>
         </div>
+        
         <button id="start-button">Start Game</button>
     </div>
 
