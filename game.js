@@ -98,21 +98,28 @@ function setupHeadEditor(uploadEl, editorEl, frameEl, previewEl, zoomEl, rotateB
         headCanvas.width = frameSize;
         headCanvas.height = frameSize;
         const headCtx = headCanvas.getContext('2d');
-
-        if (horizontalScale === -1) {
-            headCtx.translate(frameSize, 0);
-            headCtx.scale(-1, 1);
-        }
-
+        
         const scale = previewEl.width / previewEl.naturalWidth;
-        const sX = -previewEl.offsetLeft / scale;
+        const frameWidthOnScreen = frameEl.offsetWidth;
+        const frameWidthInImage = frameWidthOnScreen / scale;
+        
+        let sX; // The source X coordinate to start cropping from
         const sY = -previewEl.offsetTop / scale;
-        const sWidth = frameEl.offsetWidth / scale;
+        const sWidth = frameWidthInImage;
         const sHeight = frameEl.offsetHeight / scale;
 
+        // Calculate sX differently based on whether the image is flipped.
+        if (horizontalScale === 1) {
+            // If not flipped, the calculation is simple.
+            sX = -previewEl.offsetLeft / scale;
+        } else {
+            // If flipped, we must account for the reversed image.
+            const rightEdgeOffset = previewEl.offsetLeft + previewEl.offsetWidth;
+            sX = (previewEl.naturalWidth * scale - rightEdgeOffset) / scale;
+        }
+        
         headCtx.drawImage(previewEl, sX, sY, sWidth, sHeight, 0, 0, frameSize, frameSize);
-        headCtx.setTransform(1, 0, 0, 1, 0, 0);
-
+        
         const finalCanvas = document.createElement('canvas');
         finalCanvas.width = frameSize;
         finalCanvas.height = frameSize;
@@ -126,6 +133,7 @@ function setupHeadEditor(uploadEl, editorEl, frameEl, previewEl, zoomEl, rotateB
         editorEl.style.display = 'none';
         onConfirm();
 
+        // Reset the state for the next use
         horizontalScale = 1;
         previewEl.style.transform = 'scaleX(1)';
     });
@@ -189,7 +197,6 @@ function performAttack(attacker, attackType) {
     
     const opponent = (attacker === player1) ? player2 : player1;
     
-    // Define the opponent's body area (hurtbox)
     const opponentHurtbox = {
         x: opponent.x,
         y: opponent.y - opponent.height,
@@ -197,7 +204,6 @@ function performAttack(attacker, attackType) {
         height: opponent.height
     };
 
-    // Define the attack's hitbox
     const hitbox = { x: 0, y: 0, width: 0, height: 0 };
     const attackReach = (attackType === 'punch') ? attacker.body.armLength : attacker.body.legLength;
     const attackerPivotX = attacker.x + attacker.width / 2;
@@ -213,12 +219,11 @@ function performAttack(attacker, attackType) {
     if (attackType === 'punch') {
         hitbox.y = attacker.y - attacker.body.legLength - attacker.body.torso.height + 10;
         hitbox.height = 10;
-    } else { // Kick
+    } else {
         hitbox.y = attacker.y - attacker.body.legLength;
         hitbox.height = 10;
     }
 
-    // Check for collision
     if (hitbox.x < opponentHurtbox.x + opponentHurtbox.width &&
         hitbox.x + hitbox.width > opponentHurtbox.x &&
         hitbox.y < opponentHurtbox.y + opponentHurtbox.height &&
@@ -336,7 +341,7 @@ function drawPlayer(player) {
     }
     ctx.restore();
     
-    // Neck
+    // Neck is drawn after the head to appear behind it
     ctx.fillStyle = '#ecf0f1';
     ctx.fillRect(pivotX - 5, torsoTop - 10, 10, 10);
 
