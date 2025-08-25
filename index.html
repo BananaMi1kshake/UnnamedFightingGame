@@ -9,7 +9,11 @@
 
     <div id="setup">
         <div>
+            <label for="p1-name">Player 1 Name:</label>
+            <input type="text" id="p1-name" placeholder="Enter Name...">
+            <br>
             <label for="p1-upload">Player 1 Character:</label>
+            <span>(Please use a photo looking to the right 👉)</span>
             <input type="file" id="p1-upload" accept="image/*">
             <div id="p1-head-editor" class="head-editor">
                 <p>Adjust Player 1's Head</p>
@@ -17,12 +21,17 @@
                     <img id="p1-preview-img" class="preview-img" src="">
                 </div>
                 <input type="range" id="p1-zoom-slider" class="zoom-slider" min="50" max="400" value="100">
+                <button id="p1-rotate-btn" class="rotate-button">Rotate ↻</button>
                 <button id="p1-confirm-head" class="confirm-button">Confirm Head</button>
             </div>
         </div>
         
         <div>
+            <label for="p2-name">Player 2 Name:</label>
+            <input type="text" id="p2-name" placeholder="Enter Name...">
+            <br>
             <label for="p2-upload">Player 2 Character:</label>
+            <span>(👈 Please use a photo looking to the left)</span>
             <input type="file" id="p2-upload" accept="image/*">
              <div id="p2-head-editor" class="head-editor">
                 <p>Adjust Player 2's Head</p>
@@ -30,6 +39,7 @@
                     <img id="p2-preview-img" class="preview-img" src="">
                 </div>
                 <input type="range" id="p2-zoom-slider" class="zoom-slider" min="50" max="400" value="100">
+                <button id="p2-rotate-btn" class="rotate-button">Rotate ↻</button>
                 <button id="p2-confirm-head" class="confirm-button">Confirm Head</button>
             </div>
         </div>
