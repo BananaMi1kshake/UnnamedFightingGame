@@ -5,12 +5,29 @@ body {
     color: white;
 }
 
+#setup {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+#setup > div {
+    background-color: #2a2a2a;
+    border: 1px solid #555;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+input[type="text"] {
+    margin-bottom: 10px;
+}
+
 #game-canvas {
     background-color: #70a1ff; /* A sky blue color */
     border: 2px solid black;
 }
 
-/* --- New Head Editor Styles --- */
+/* --- Head Editor Styles --- */
 .head-editor {
     display: none; /* Hidden by default */
     padding: 15px;
@@ -45,6 +62,12 @@ body {
 .zoom-slider {
     width: 150px;
     margin-top: 10px;
+}
+
+.rotate-button {
+    margin-top: 10px;
+    padding: 8px 12px;
+    cursor: pointer;
 }
 
 .confirm-button {
