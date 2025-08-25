@@ -15,6 +15,7 @@ const p1_previewImg = document.getElementById('p1-preview-img');
 const p1_zoomSlider = document.getElementById('p1-zoom-slider');
 const p1_rotateBtn = document.getElementById('p1-rotate-btn');
 const p1_confirmBtn = document.getElementById('p1-confirm-head');
+const p1_nameInput = document.getElementById('p1-name');
 
 // Player 2 Elements
 const p2_upload = document.getElementById('p2-upload');
@@ -24,6 +25,8 @@ const p2_previewImg = document.getElementById('p2-preview-img');
 const p2_zoomSlider = document.getElementById('p2-zoom-slider');
 const p2_rotateBtn = document.getElementById('p2-rotate-btn');
 const p2_confirmBtn = document.getElementById('p2-confirm-head');
+const p2_nameInput = document.getElementById('p2-name');
+
 
 // --- GAME STATE VARIABLES ---
 const keysPressed = {};
@@ -43,7 +46,7 @@ window.addEventListener('keyup', (event) => { keysPressed[event.code] = false; }
 function setupHeadEditor(uploadEl, editorEl, frameEl, previewEl, zoomEl, rotateBtn, confirmBtn, playerImage, onConfirm) {
     let isDragging = false;
     let startX, startY, imgStartX, imgStartY;
-    let currentRotation = 0;
+    let horizontalScale = 1; // 1 = normal, -1 = flipped
 
     uploadEl.addEventListener('change', (e) => {
         const file = e.target.files[0];
@@ -62,8 +65,8 @@ function setupHeadEditor(uploadEl, editorEl, frameEl, previewEl, zoomEl, rotateB
     });
 
     rotateBtn.addEventListener('click', () => {
-        currentRotation += 90;
-        previewEl.style.transform = `rotate(${currentRotation}deg)`;
+        horizontalScale *= -1; // Toggle between 1 and -1
+        previewEl.style.transform = `scaleX(${horizontalScale})`;
     });
 
     frameEl.addEventListener('mousedown', (e) => {
@@ -96,9 +99,10 @@ function setupHeadEditor(uploadEl, editorEl, frameEl, previewEl, zoomEl, rotateB
         headCanvas.height = frameSize;
         const headCtx = headCanvas.getContext('2d');
 
-        headCtx.translate(frameSize / 2, frameSize / 2);
-        headCtx.rotate(currentRotation * Math.PI / 180);
-        headCtx.translate(-frameSize / 2, -frameSize / 2);
+        if (horizontalScale === -1) {
+            headCtx.translate(frameSize, 0);
+            headCtx.scale(-1, 1);
+        }
 
         const scale = previewEl.width / previewEl.naturalWidth;
         const sX = -previewEl.offsetLeft / scale;
@@ -122,8 +126,8 @@ function setupHeadEditor(uploadEl, editorEl, frameEl, previewEl, zoomEl, rotateB
         editorEl.style.display = 'none';
         onConfirm();
 
-        currentRotation = 0;
-        previewEl.style.transform = 'rotate(0deg)';
+        horizontalScale = 1;
+        previewEl.style.transform = 'scaleX(1)';
     });
 }
 
@@ -151,7 +155,9 @@ function createPlayer(x, y, headImage, name) {
 }
 
 function handleControls() {
-    // ... Player 1 and 2 controls logic ...
+    player1.vx = 0;
+    player2.vx = 0;
+
     if (keysPressed['KeyA']) player1.vx = -5;
     if (keysPressed['KeyD']) player1.vx = 5;
     if (keysPressed['KeyC'] && !player1.isJumping) {
@@ -174,15 +180,12 @@ function performAttack(attacker, attackType) {
     attacker.attackCooldown = 500;
     attacker.body.animState = attackType;
     attacker.body.animTimer = 250;
+    
     // Hitbox logic would go here
 }
 
 
 function updatePlayer(player) {
-    player1.vx = 0;
-    player2.vx = 0;
-    handleControls();
-
     player.x += player.vx;
     player.vy += gravity;
     player.y += player.vy;
@@ -204,7 +207,6 @@ function updatePlayer(player) {
         if (player.body.animTimer <= 0) player.body.animState = 'idle';
     }
     
-    // Simple animation state updates
     if (player.body.animState === 'punch') {
         const arm = player.direction === 'right' ? player.body.arms.right : player.body.arms.left;
         arm.targetRotation = 1.57; // 90 degrees
@@ -218,7 +220,6 @@ function updatePlayer(player) {
         player.body.legs.left.targetRotation = 0;
     }
 
-    // Tweening for smooth animation
     for (const limb of [player.body.arms.left, player.body.arms.right, player.body.legs.left, player.body.legs.right]) {
         limb.rotation += (limb.targetRotation - limb.rotation) * 0.2;
     }
@@ -316,6 +317,7 @@ function gameLoop() {
     if (gameOver) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
+    handleControls();
     updatePlayer(player1);
     updatePlayer(player2);
     
@@ -346,8 +348,8 @@ startButton.addEventListener('click', () => {
         return;
     }
     
-    const p1_name = document.getElementById('p1-name').value;
-    const p2_name = document.getElementById('p2-name').value;
+    const p1_name = p1_nameInput.value;
+    const p2_name = p2_nameInput.value;
     const startY = canvas.height; 
 
     player1 = createPlayer(100, startY, p1_headImage, p1_name);
