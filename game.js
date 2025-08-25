@@ -108,12 +108,9 @@ function setupHeadEditor(uploadEl, editorEl, frameEl, previewEl, zoomEl, rotateB
         const sWidth = frameWidthInImage;
         const sHeight = frameEl.offsetHeight / scale;
 
-        // Calculate sX differently based on whether the image is flipped.
         if (horizontalScale === 1) {
-            // If not flipped, the calculation is simple.
             sX = -previewEl.offsetLeft / scale;
         } else {
-            // If flipped, we must account for the reversed image.
             const rightEdgeOffset = previewEl.offsetLeft + previewEl.offsetWidth;
             sX = (previewEl.naturalWidth * scale - rightEdgeOffset) / scale;
         }
@@ -133,7 +130,6 @@ function setupHeadEditor(uploadEl, editorEl, frameEl, previewEl, zoomEl, rotateB
         editorEl.style.display = 'none';
         onConfirm();
 
-        // Reset the state for the next use
         horizontalScale = 1;
         previewEl.style.transform = 'scaleX(1)';
     });
@@ -319,12 +315,12 @@ function drawPlayer(player) {
     ctx.save();
     ctx.translate(pivotX - body.torso.width / 2, torsoTop + 10);
     ctx.rotate(body.arms.left.rotation);
-    ctx.fillRect(0, -5, body.armLength, 10);
+    ctx.fillRect(-body.armLength, -5, body.armLength, 10);
     ctx.restore();
     ctx.save();
     ctx.translate(pivotX + body.torso.width / 2, torsoTop + 10);
     ctx.rotate(body.arms.right.rotation);
-    ctx.fillRect(-body.armLength, -5, body.armLength, 10);
+    ctx.fillRect(0, -5, body.armLength, 10);
     ctx.restore();
 
     // Head
@@ -341,7 +337,7 @@ function drawPlayer(player) {
     }
     ctx.restore();
     
-    // Neck is drawn after the head to appear behind it
+    // Neck
     ctx.fillStyle = '#ecf0f1';
     ctx.fillRect(pivotX - 5, torsoTop - 10, 10, 10);
 
