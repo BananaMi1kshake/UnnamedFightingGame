@@ -1,0 +1,18 @@
+body {
+    font-family: sans-serif;
+    text-align: center;
+    background-color: #333;
+    color: white;
+}
+
+#game-canvas {
+    background-color: #70a1ff; /* A sky blue color */
+    border: 2px solid black;
+}
+
+.controls {
+    display: flex;
+    justify-content: space-around;
+    width: 800px;
+    margin: 10px auto;
+}
