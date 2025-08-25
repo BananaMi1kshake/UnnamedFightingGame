@@ -138,7 +138,7 @@ setupHeadEditor(p2_upload, p2_headEditor, p2_headFrame, p2_previewImg, p2_zoomSl
 // --- CORE GAME FUNCTIONS ---
 
 function createPlayer(x, y, headImage, name) {
-    const handsDownAngle = Math.PI / 2; // 90 degrees
+    const handsDownAngle = Math.PI / 2;
     return {
         x, y, headImage, name: name || 'Player',
         width: 60, height: 150,
@@ -148,7 +148,6 @@ function createPlayer(x, y, headImage, name) {
         direction: 'right', canAttack: true, attackCooldown: 0,
         body: {
             torso: { width: 40, height: 60 },
-            // CHANGED: Set the initial and target rotation for arms to be down.
             arms: {
                 left: { rotation: -handsDownAngle, targetRotation: -handsDownAngle },
                 right: { rotation: handsDownAngle, targetRotation: handsDownAngle }
@@ -161,6 +160,7 @@ function createPlayer(x, y, headImage, name) {
 }
 
 function handleControls() {
+    if (gameOver) return;
     player1.vx = 0;
     player2.vx = 0;
 
@@ -187,32 +187,36 @@ function performAttack(attacker, attackType) {
     attacker.body.animState = attackType;
     attacker.body.animTimer = 250;
     
-    // --- Hitbox Logic ---
     const opponent = (attacker === player1) ? player2 : player1;
-    const hitbox = {
-        x: 0, y: 0, width: 0, height: 0
-    };
-    const attackReach = (attackType === 'punch') ? 40 : 50;
     
-    // Position the hitbox based on the attacker's position and direction
-    const attackerPivotX = attacker.x + attacker.width / 2;
-    if (attacker.direction === 'right') {
-        hitbox.x = attackerPivotX;
-        hitbox.width = attackReach;
-    } else {
-        hitbox.x = attackerPivotX - attackReach;
-        hitbox.width = attackReach;
-    }
-    hitbox.y = attacker.y - attacker.height + (attackType === 'punch' ? 40 : 80);
-    hitbox.height = 20;
-
-    // Define the opponent's hurtbox
+    // Define the opponent's body area (hurtbox)
     const opponentHurtbox = {
         x: opponent.x,
         y: opponent.y - opponent.height,
         width: opponent.width,
         height: opponent.height
     };
+
+    // Define the attack's hitbox
+    const hitbox = { x: 0, y: 0, width: 0, height: 0 };
+    const attackReach = (attackType === 'punch') ? attacker.body.armLength : attacker.body.legLength;
+    const attackerPivotX = attacker.x + attacker.width / 2;
+
+    if (attacker.direction === 'right') {
+        hitbox.x = attackerPivotX + attacker.body.torso.width / 2;
+        hitbox.width = attackReach;
+    } else {
+        hitbox.x = attackerPivotX - attacker.body.torso.width / 2 - attackReach;
+        hitbox.width = attackReach;
+    }
+    
+    if (attackType === 'punch') {
+        hitbox.y = attacker.y - attacker.body.legLength - attacker.body.torso.height + 10;
+        hitbox.height = 10;
+    } else { // Kick
+        hitbox.y = attacker.y - attacker.body.legLength;
+        hitbox.height = 10;
+    }
 
     // Check for collision
     if (hitbox.x < opponentHurtbox.x + opponentHurtbox.width &&
@@ -227,18 +231,14 @@ function performAttack(attacker, attackType) {
 
 
 function updatePlayer(player) {
-    // Apply player-controlled velocity
     player.x += player.vx;
-    // Apply and decay knockback
     player.x += player.knockbackVx;
-    player.knockbackVx *= 0.90; // Friction
+    player.knockbackVx *= 0.90;
     if (Math.abs(player.knockbackVx) < 0.1) player.knockbackVx = 0;
 
-    // Apply gravity
     player.vy += gravity;
     player.y += player.vy;
 
-    // Boundary and floor checks
     if (player.x < 0) player.x = 0;
     if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
     if (player.y > canvas.height) {
@@ -247,7 +247,6 @@ function updatePlayer(player) {
         player.isJumping = false;
     }
 
-    // Cooldown and Animation Timers
     if (!player.canAttack) {
         player.attackCooldown -= 16;
         if (player.attackCooldown <= 0) player.canAttack = true;
@@ -257,33 +256,29 @@ function updatePlayer(player) {
         if (player.body.animTimer <= 0) player.body.animState = 'idle';
     }
     
-    // --- UPDATED ANIMATION LOGIC ---
     const handsDownAngle = Math.PI / 2;
     
-    // Set default idle rotations
     player.body.arms.right.targetRotation = handsDownAngle;
     player.body.arms.left.targetRotation = -handsDownAngle;
     player.body.legs.right.targetRotation = 0;
     player.body.legs.left.targetRotation = 0;
 
-    // Set attack rotations based on state and direction
     if (player.body.animState === 'punch') {
         if (player.direction === 'right') {
-            player.body.arms.right.targetRotation = 0; // Punch straight
+            player.body.arms.right.targetRotation = 0;
         } else {
-            player.body.arms.left.targetRotation = 0; // Punch straight
+            player.body.arms.left.targetRotation = 0;
         }
     } else if (player.body.animState === 'kick') {
         if (player.direction === 'right') {
-            player.body.legs.right.targetRotation = -0.5; // Kick forward
+            player.body.legs.right.targetRotation = -0.5;
         } else {
-            player.body.legs.left.targetRotation = 0.5; // Kick forward
+            player.body.legs.left.targetRotation = 0.5;
         }
     }
 
-    // Tweening for smooth animation
     for (const limb of [player.body.arms.left, player.body.arms.right, player.body.legs.left, player.body.legs.right]) {
-        limb.rotation += (limb.targetRotation - limb.rotation) * 0.25; // Increased speed slightly
+        limb.rotation += (limb.targetRotation - limb.rotation) * 0.25;
     }
 }
 
@@ -295,15 +290,6 @@ function drawPlayer(player) {
     const pivotX = x + width / 2;
     const pivotY = y; 
 
-    // Flipping the entire character for direction is now handled by individual limb rotations
-    // The main canvas flip is no longer needed here if limbs are drawn symmetrically.
-    // However, we'll keep it for the head.
-    if (direction === 'left') {
-        ctx.translate(pivotX, pivotY - body.legLength - body.torso.height); 
-        ctx.scale(-1, 1);
-        ctx.translate(-pivotX, -(pivotY - body.legLength - body.torso.height));
-    }
-    
     const torsoTop = pivotY - body.legLength - body.torso.height;
 
     // Legs
@@ -328,19 +314,31 @@ function drawPlayer(player) {
     ctx.save();
     ctx.translate(pivotX - body.torso.width / 2, torsoTop + 10);
     ctx.rotate(body.arms.left.rotation);
-    ctx.fillRect(0, -5, body.armLength, 10); // Draw relative to pivot
+    ctx.fillRect(0, -5, body.armLength, 10);
     ctx.restore();
     ctx.save();
     ctx.translate(pivotX + body.torso.width / 2, torsoTop + 10);
     ctx.rotate(body.arms.right.rotation);
-    ctx.fillRect(-body.armLength, -5, body.armLength, 10); // Draw relative to pivot
+    ctx.fillRect(-body.armLength, -5, body.armLength, 10);
     ctx.restore();
 
-    // Neck & Head
+    // Head
+    ctx.save();
+    const headSize = 60;
+    const headX = pivotX - headSize / 2;
+    const headY = torsoTop - 10 - headSize;
+    if (direction === 'left') {
+        ctx.translate(headX + headSize, headY);
+        ctx.scale(-1, 1);
+        ctx.drawImage(headImage, 0, 0, headSize, headSize);
+    } else {
+        ctx.drawImage(headImage, headX, headY, headSize, headSize);
+    }
+    ctx.restore();
+    
+    // Neck
     ctx.fillStyle = '#ecf0f1';
     ctx.fillRect(pivotX - 5, torsoTop - 10, 10, 10);
-    const headSize = 60;
-    ctx.drawImage(headImage, pivotX - headSize / 2, torsoTop - 10 - headSize, headSize, headSize);
 
     ctx.restore();
 }
